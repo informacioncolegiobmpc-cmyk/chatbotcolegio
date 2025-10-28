@@ -1,0 +1,28 @@
+Terminal Nuevo terminal pnpm install
+borrar el example de envexaplem
+.env
+ingresar a 
+https://console.groq.com/keys
+colocar la api key en
+GROQ_API_KEY ''
+seleccionar el modelo de IA en Playground
+cambiar el modelo en el archivo ai-chat.js
+configurar credenciales de google
+guia paso paso credenciales de google
+copia de goggle sheet
+abrir la plantilla de google sheet 
+realizar una copia de google sheet
+copiar el ID despues de la /d/
+npm start
+copiar la URL
+Regresar a la plantilla de google
+abrir el codigo QR
+entrar a appscripts 
+cambiar el qrpageURl
+
+
+WXFP WLSM
+
+404: NOT_FOUND Code: NOT_FOUND ID: iad1::74vjh-1761582989797-e9feb6645d2e
+
+
