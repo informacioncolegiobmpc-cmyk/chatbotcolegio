@@ -3,36 +3,50 @@ import { google } from 'googleapis'
 
 /**
  * @class GoogleSheetService
- * Esta clase encapsula toda la lógica para interactuar con Google Sheets.
- * Su principal responsabilidad es obtener los flujos de conversación y mantenerlos
- * en una caché para mejorar el rendimiento y evitar llamadas innecesarias a la API.
+ * Encapsula toda la lógica para interactuar con Google Sheets,
+ * usando las credenciales cargadas desde el archivo .env.
  */
 class GoogleSheetService {
     constructor() {
-        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON)
+        // ✅ Leer credenciales desde .env
+        const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+        if (!credentialsJson) {
+            throw new Error('❌ No se encontró GOOGLE_APPLICATION_CREDENTIALS_JSON en el archivo .env')
+        }
+
+        let credentials
+        try {
+            credentials = JSON.parse(credentialsJson)
+        } catch (error) {
+            console.error('❌ Error al parsear las credenciales JSON:', error.message)
+            throw new Error('El formato de GOOGLE_APPLICATION_CREDENTIALS_JSON no es válido')
+        }
+
+        // ✅ Crear autenticador con las credenciales parseadas
         this.auth = new GoogleAuth({
             credentials,
-            scopes: 'https://www.googleapis.com/auth/spreadsheets',
+            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         })
-        this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-        
+
+        // ✅ Inicializar la API de Sheets
+        this.sheets = google.sheets({ version: 'v4', auth: this.auth })
+
+        // ✅ ID de la hoja desde .env
         this.sheetId = process.env.SHEET_ID
-        
+
+        // Cachés
         this.flowsCache = null
         this.promptsCache = null
         this.scheduledMessagesCache = null
         this.lastFlowsFetch = 0
         this.lastPromptsFetch = 0
         this.lastScheduledMessagesFetch = 0
-        this.cacheDuration = 5 * 60 * 1000
+        this.cacheDuration = 5 * 60 * 1000 // 5 minutos
     }
 
-    /**
-     * Obtiene los flujos de conversación.
-     * Primero intenta devolver los datos desde la caché. Si la caché está vacía o ha expirado,
-     * consulta la API de Google Sheets y actualiza la caché.
-     * @returns {Promise<Array<Object>>} Un array de objetos, donde cada objeto representa un flujo.
-     */
+    /* ================================
+       🧩 Obtener flujos
+    ================================= */
     async getFlows() {
         const now = Date.now()
         if (this.flowsCache && now - this.lastFlowsFetch < this.cacheDuration) {
@@ -48,11 +62,7 @@ class GoogleSheetService {
             })
 
             const rows = response.data.values || []
-            const headers = [
-                'addKeyword',
-                'addAnswer',
-                'media',
-            ]
+            const headers = ['addKeyword', 'addAnswer', 'media']
 
             const flows = rows.map((row) => {
                 const flow = {}
@@ -72,11 +82,9 @@ class GoogleSheetService {
         }
     }
 
-    /**
-     * Obtiene los prompts para la IA desde la hoja 'IA_Prompts'.
-     * También utiliza su propio sistema de caché.
-     * @returns {Promise<Array<Object>>} Un array de objetos, donde cada objeto es un par Clave/Valor.
-     */
+    /* ================================
+       🧠 Obtener prompts de IA
+    ================================= */
     async getPrompts() {
         const now = Date.now()
         if (this.promptsCache && now - this.lastPromptsFetch < this.cacheDuration) {
@@ -116,10 +124,9 @@ class GoogleSheetService {
         }
     }
 
-    /**
-     * Obtiene los mensajes programados desde la hoja 'Mensajes_Programados'.
-     * @returns {Promise<Array<Object>>} Un array de objetos con los mensajes programados.
-     */
+    /* ================================
+       🕒 Obtener mensajes programados
+    ================================= */
     async getScheduledMessages() {
         const now = Date.now()
         if (this.scheduledMessagesCache && now - this.lastScheduledMessagesFetch < this.cacheDuration) {
@@ -135,17 +142,10 @@ class GoogleSheetService {
             })
 
             const rows = response.data.values || []
-            const headers = [
-                'fecha',
-                'hora', 
-                'phone',
-                'addAnswer',
-                'media',
-                'estado'
-            ]
+            const headers = ['fecha', 'hora', 'phone', 'addAnswer', 'media', 'estado']
 
             const scheduledMessages = rows.map((row, index) => {
-                const message = { rowIndex: index + 2 } // +2 porque empezamos en A2
+                const message = { rowIndex: index + 2 } // +2 porque empieza en A2
                 headers.forEach((header, colIndex) => {
                     message[header] = row[colIndex] || null
                 })
@@ -162,12 +162,9 @@ class GoogleSheetService {
         }
     }
 
-    /**
-     * Actualiza el estado de un mensaje programado en Google Sheets.
-     * @param {number} rowIndex - Índice de la fila en Google Sheets (1-indexed)
-     * @param {string} newStatus - Nuevo estado del mensaje
-     * @returns {Promise<boolean>} True si se actualizó correctamente
-     */
+    /* ================================
+       ✏️ Actualizar estado de mensaje
+    ================================= */
     async updateMessageStatus(rowIndex, newStatus) {
         try {
             await this.sheets.spreadsheets.values.update({
@@ -179,7 +176,6 @@ class GoogleSheetService {
                 }
             })
 
-            // Invalidar caché para forzar actualización en próxima consulta
             this.scheduledMessagesCache = null
             console.log(`✅ Estado actualizado en fila ${rowIndex}: ${newStatus}`)
             return true
@@ -188,10 +184,11 @@ class GoogleSheetService {
             return false
         }
     }
+    
 
-    /**
-     * Invalida todas las cachés para forzar actualización desde Google Sheets.
-     */
+    /* ================================
+       ♻️ Invalidar caché
+    ================================= */
     invalidateCache() {
         this.flowsCache = null
         this.promptsCache = null
@@ -201,8 +198,40 @@ class GoogleSheetService {
         this.lastScheduledMessagesFetch = 0
         console.log('🔄 Todas las cachés invalidadas')
     }
+        /**
+     * Guarda un mensaje (entrante o saliente) en la hoja 'Logs'.
+     * @param {string} phone - Número de teléfono del usuario
+     * @param {string} message - Mensaje de texto
+     * @param {string} direction - 'IN' (entrante) o 'OUT' (saliente)
+     * @param {string} status - Estado opcional, por ejemplo 'Enviado', 'Recibido', 'Error'
+     */
+    async logMessage(phone, message, direction = 'IN', role = 'user', status = 'OK') {
+    try {
+        const timestamp = new Date().toLocaleString('es-GT', { timeZone: 'America/Guatemala' });
+
+        const values = [
+            timestamp,
+            phone,
+            direction,
+            role,
+            message,
+            status
+        ];
+
+        await this.sheets.spreadsheets.values.append({
+            spreadsheetId: this.sheetId,
+            range: 'Logs!A:F',
+            valueInputOption: 'RAW',
+            resource: { values: [values] }
+        });
+
+        console.log(`✅ [Sheets] Mensaje de ${phone} registrado en Logs`);
+    } catch (error) {
+        console.error('❌ Error al guardar mensaje en Logs:', error.message);
+    }
+}
 }
 
+// ✅ Exportar una instancia única
 const googleSheetService = new GoogleSheetService()
-// Exportamos la instancia para que pueda ser usada en otros archivos (como en app.js).
 export default googleSheetService

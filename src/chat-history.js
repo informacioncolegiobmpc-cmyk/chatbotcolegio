@@ -1,5 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
+import googleSheetService from './sheets.js'; // Ajusta la ruta si es diferente
 
 /**
  * @class ChatHistoryService
@@ -95,23 +96,37 @@ class ChatHistoryService {
      * @param {string} name - Nombre del contacto (opcional)
      */
     async saveMessage(phoneNumber, role, content, name = null) {
-        const history = await this.loadHistory(phoneNumber)
-        
-        if (name && !history.name) {
-            history.name = name
-        }
-        
-        const message = {
-            timestamp: new Date().toISOString(),
-            role,
-            content: content.trim()
-        }
-        
-        history.messages.push(message)
-        await this.saveHistory(phoneNumber, history)
-        
-        console.log(`💬 Mensaje guardado para ${phoneNumber}: ${role}`)
+    const history = await this.loadHistory(phoneNumber)
+    
+    if (name && !history.name) {
+        history.name = name
     }
+    
+    const message = {
+        timestamp: new Date().toISOString(),
+        role,
+        content: content.trim()
+    }
+    
+    history.messages.push(message)
+    await this.saveHistory(phoneNumber, history)
+    
+    console.log(`💬 Mensaje guardado para ${phoneNumber}: ${role}`)
+    
+    // === Registro automático en Google Sheets ===
+    try {
+        const direction = role === 'user' ? 'IN' : 'OUT';
+        await googleSheetService.logMessage(
+            phoneNumber,
+            content,
+            direction,
+            role,
+            'OK'
+        );
+    } catch (error) {
+        console.error('❌ Error al registrar mensaje en Sheets:', error.message);
+    }
+}
 
     /**
      * Obtiene el contexto relevante para la IA
