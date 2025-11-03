@@ -139,7 +139,7 @@ const main = async () => {
 // 👇 este mantiene el proceso vivo
 setInterval(() => {
   console.log("⏳ Esperando mensajes...");
-}, 60000);
+}, 10000);
     httpServer(+PORT)
 }
 
