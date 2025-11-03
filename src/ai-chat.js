@@ -71,7 +71,7 @@ class GroqService {
                 stream: false,
             })
 
-            const aiResponse = chatCompletion.choices[0]?.message?.content || 'No he podido generar una respuesta.'
+            const aiResponse = chatCompletion.choices[0]?.message?.content || ''
             
             if (phoneNumber) {
                 await chatHistoryService.saveMessage(phoneNumber, 'user', userInput)
