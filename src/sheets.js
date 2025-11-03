@@ -43,6 +43,68 @@ class GoogleSheetService {
         this.lastScheduledMessagesFetch = 0
         this.cacheDuration = 5 * 60 * 1000 // 5 minutos
     }
+    // ==============================================
+// 🤖 findFlowAnswer.js
+// Servicio para encontrar respuestas según Google Sheets
+// ==============================================
+
+import googleSheetService from "./googleSheetService.js";
+
+/**
+ * Normaliza texto para comparar sin errores de mayúsculas/tildes/espacios.
+ */
+function normalizeText(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD") // elimina tildes
+    .replace(/[\u0300-\u036f]/g, "") // remueve acentos
+    .replace(/[^a-z0-9\s]/g, "") // elimina símbolos
+    .trim();
+}
+
+/**
+ * Busca una coincidencia entre el mensaje del usuario y las keywords del Sheet.
+ * @param {string} userMessage - El mensaje entrante del usuario
+ * @returns {object|null} - Devuelve el flujo coincidente o null si no se encontró
+ */
+export async function findFlowAnswer(userMessage) {
+  const msg = normalizeText(userMessage);
+  const flows = await googleSheetService.getFlows();
+
+  for (const flow of flows) {
+    const rawKeywords = flow.addKeyword || "";
+    const keywords = rawKeywords
+      .split(",")
+      .map(k => normalizeText(k));
+
+    // Recorremos todas las palabras clave
+    for (const keyword of keywords) {
+      if (!keyword) continue;
+
+      // === Coincidencia exacta ===
+      if (msg === keyword) {
+        console.log(`✅ Coincidencia exacta: "${keyword}"`);
+        return flow;
+      }
+
+      // === Coincidencia por palabra completa ===
+      const regexWord = new RegExp(`\\b${keyword}\\b`, "i");
+      if (regexWord.test(msg)) {
+        console.log(`✅ Coincidencia por palabra: "${keyword}"`);
+        return flow;
+      }
+
+      // === Coincidencia parcial (por ejemplo: "hola buenos dias") ===
+      if (msg.includes(keyword)) {
+        console.log(`✅ Coincidencia parcial: "${keyword}"`);
+        return flow;
+      }
+    }
+  }
+
+  console.log("⚠️ No se encontró coincidencia para:", msg);
+  return null;
+}
 
     /* ================================
        🧩 Obtener flujos
