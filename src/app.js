@@ -40,21 +40,6 @@ const dynamicFlow = addKeyword(EVENTS.WELCOME)
             await flowDynamic(aiResponse)
         }
     })
-import { findFlowAnswer } from "./findFlowAnswer.js";
-
-bot.on("message", async (msg) => {
-  const userMessage = msg.body || msg.text; // según tu lib de WhatsApp/Telegram
-  const phone = msg.from; // número del usuario
-
-  const flow = await findFlowAnswer(userMessage);
-
-  if (flow) {
-    await bot.sendMessage(phone, flow.addAnswer);
-    console.log(`📩 Enviado mensaje a ${phone}: ${flow.addAnswer}`);
-  } else {
-    await bot.sendMessage(phone, "");
-  }
-});
 
 const main = async () => {
     await googleSheetService.getFlows()
