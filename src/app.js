@@ -15,19 +15,29 @@ const dynamicFlow = addKeyword(EVENTS.WELCOME)
         const userInput = ctx.body.toLowerCase().trim()
         const phoneNumber = ctx.from
 
-        // Buscar coincidencia con cualquier palabra clave (soporte para comas y números)
+        // Buscar coincidencia exacta con número o parcial con texto
         const triggeredFlow = flows.find(f => {
             if (!f.addKeyword) return false
+
             const keywords = f.addKeyword
                 .toLowerCase()
                 .split(',')
                 .map(k => k.trim())
 
-            return keywords.some(keyword => userInput === keyword || userInput.includes(keyword))
+            return keywords.some(keyword => {
+                // Si el keyword es un número
+                if (/^\d+$/.test(keyword)) {
+                    // Coincide solo si el mensaje completo es ese número
+                    return userInput === keyword
+                }
+
+                // Para palabras normales, coincidencia parcial
+                return userInput.includes(keyword)
+            })
         })
 
         if (triggeredFlow) {
-            // Si hay varias respuestas, dividirlas por coma
+            // Dividir respuestas y medios por coma
             const answers = triggeredFlow.addAnswer
                 ? triggeredFlow.addAnswer.split(',').map(a => a.trim())
                 : []
@@ -52,14 +62,12 @@ const dynamicFlow = addKeyword(EVENTS.WELCOME)
                     await flowDynamic([{ body: answer }])
                 }
             }
-
         } else {
             console.log('🤖 No se encontró palabra clave, derivando a la IA...')
             const aiResponse = await groqService.getResponse(userInput, phoneNumber)
             await flowDynamic([{ body: aiResponse }])
         }
-    })
-const main = async () => {
+    })const main = async () => {
     await googleSheetService.getFlows()
     await googleSheetService.getPrompts()
     await googleSheetService.getScheduledMessages()
