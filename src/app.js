@@ -67,7 +67,10 @@ const dynamicFlow = addKeyword(EVENTS.WELCOME)
             const aiResponse = await groqService.getResponse(userInput, phoneNumber)
             await flowDynamic([{ body: aiResponse }])
         }
-    })const main = async () => {
+    }) // 👈 este cierre pertenece al addKeyword
+
+// ✅ AQUÍ CIERRAS bien el bloque main
+const main = async () => {
     await googleSheetService.getFlows()
     await googleSheetService.getPrompts()
     await googleSheetService.getScheduledMessages()
