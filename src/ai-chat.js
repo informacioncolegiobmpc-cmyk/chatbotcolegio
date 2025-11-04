@@ -81,7 +81,7 @@ class GroqService {
             return aiResponse
         } catch (error) {
             console.error('❌ Error al contactar con la API de Groq:', error)
-            return 'Lo siento, estoy teniendo problemas para conectar con mi cerebro de IA en este momento.'
+            return ''
         }
     }
 }
