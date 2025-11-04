@@ -13,34 +13,52 @@ const dynamicFlow = addKeyword(EVENTS.WELCOME)
     .addAction(async (ctx, { flowDynamic }) => {
         const flows = await googleSheetService.getFlows()
         const userInput = ctx.body.toLowerCase().trim()
+        const phoneNumber = ctx.from
 
+        // Buscar coincidencia con cualquier palabra clave (soporte para comas y números)
         const triggeredFlow = flows.find(f => {
             if (!f.addKeyword) return false
-            const sheetKeyword = f.addKeyword.toLowerCase().trim()
-            return userInput.includes(sheetKeyword)
+            const keywords = f.addKeyword
+                .toLowerCase()
+                .split(',')
+                .map(k => k.trim())
+
+            return keywords.some(keyword => userInput === keyword || userInput.includes(keyword))
         })
 
         if (triggeredFlow) {
-            const answer = triggeredFlow.addAnswer
-            const mediaUrl = triggeredFlow.media && triggeredFlow.media.trim()
-            const phoneNumber = ctx.from
-            
-            await chatHistoryService.saveMessage(phoneNumber, 'user', userInput)
-            await chatHistoryService.saveMessage(phoneNumber, 'assistant', answer)
+            // Si hay varias respuestas, dividirlas por coma
+            const answers = triggeredFlow.addAnswer
+                ? triggeredFlow.addAnswer.split(',').map(a => a.trim())
+                : []
 
-            if (mediaUrl) {
-                await flowDynamic(answer, { media: mediaUrl })
-            } else {
-                await flowDynamic(answer)
+            const mediaUrls = triggeredFlow.media
+                ? triggeredFlow.media.split(',').map(m => m.trim())
+                : []
+
+            // Guardar historial
+            await chatHistoryService.saveMessage(phoneNumber, 'user', userInput)
+
+            // Enviar todas las respuestas
+            for (let i = 0; i < answers.length; i++) {
+                const answer = answers[i]
+                const mediaUrl = mediaUrls[i] || null
+
+                await chatHistoryService.saveMessage(phoneNumber, 'assistant', answer)
+
+                if (mediaUrl) {
+                    await flowDynamic([{ body: answer, media: mediaUrl }])
+                } else {
+                    await flowDynamic([{ body: answer }])
+                }
             }
+
         } else {
             console.log('🤖 No se encontró palabra clave, derivando a la IA...')
-            const phoneNumber = ctx.from
             const aiResponse = await groqService.getResponse(userInput, phoneNumber)
-            await flowDynamic(aiResponse)
+            await flowDynamic([{ body: aiResponse }])
         }
     })
-
 const main = async () => {
     await googleSheetService.getFlows()
     await googleSheetService.getPrompts()
