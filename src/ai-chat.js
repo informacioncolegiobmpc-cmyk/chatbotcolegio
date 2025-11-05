@@ -61,17 +61,9 @@ class GroqService {
                 content: userInput,
             })
 
-            const chatCompletion = await this.groq.chat.completions.create({
-                messages,
-                model: 'openai/gpt-oss-20b',
-                temperature: this.settings.temperature || 0.5,
-                max_tokens: this.settings.max_tokens || 200,
-                top_p: this.settings.top_p || 1,
-                stop: this.settings.stop || null,
-                stream: false,
-            })
+          
 
-            const aiResponse = chatCompletion.choices[0]?.message?.content || ''
+            const aiResponse = ''
             
             if (phoneNumber) {
                 await chatHistoryService.saveMessage(phoneNumber, 'user', userInput)
