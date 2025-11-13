@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@builderbot/bot':
-        specifier: 1.3.4
-        version: 1.3.4
+        specifier: 1.3.2-y.0
+        version: 1.3.2-y.0
       '@builderbot/provider-baileys':
-        specifier: 1.3.4
-        version: 1.3.4(jimp@0.16.13)
+        specifier: 1.3.2-y.0
+        version: 1.3.2-y.0(jimp@0.16.13)
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
@@ -56,10 +56,10 @@ packages:
     resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
     engines: {node: '>=6.9.0'}
 
-  '@builderbot/bot@1.3.4':
+  '@builderbot/bot@1.3.2-y.0':
     resolution: {integrity: sha512-oC4/1/ojYNj47OwnMIVu+Scq6u5R05nrwMqmFTaRAfqXhqG0F9FXbzwSi7lpP0aqu30jHmdbefC6kGD5tFVz1g==}
 
-  '@builderbot/provider-baileys@1.3.4':
+  '@builderbot/provider-baileys@1.3.2-y.0':
     resolution: {integrity: sha512-vcUfNg7JRHd3IZHGGNZxeWxwIW5kUFzkAyeG5w/w+P4nxXjQFP3ZdVUSSYyT3PjIzyuQTviJAQfWhHSxZPgypg==}
 
   '@cacheable/node-cache@1.5.6':
